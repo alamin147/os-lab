@@ -22,6 +22,7 @@
   - can handle both ipv4 and ipv6
   - no ip response if ip not registered
   - redirect to requested destination
+  - ip unblock after certain time
 
 # Packages
   - node
