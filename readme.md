@@ -17,3 +17,17 @@
 
 # features to add (experimental)
   - dynamic unblock
+  - redirect after 3 second to ip
+
+# Process
+  + user req to a domain
+  + client side code get the informations (ip, reqested domain)
+  + if server not on maintenance it will do further process
+  + client information encode then sends to server
+  + server decode
+  + after decode server check block ip
+  + server searches to the database for ip of requested domain
+  + if ip not find it sends the not found response
+  + if found ip it encodes data and send response to client
+  + client decode that data
+  + finally send to user with response
