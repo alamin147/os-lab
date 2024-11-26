@@ -10,12 +10,15 @@ const DNS_SERVER_PORT = 8000;
 const HTTP_PORT = 3000;
 const DNS_SERVER_HOST = "localhost";
 const maintenance = false;
-const REDIRECT_DELAY = 10*1000;
+const REDIRECT_DELAY = 1000 * 1000;
+
+// Database of IP addresses for domains
 const db_of_IP = {
   "a.com": "172.16.50.4",
   "b.com": "155.103.10.60",
   "diu.com": "456.12.4.6",
 };
+
 
 const blockedIps = [];
 const userRequestLog = {};
@@ -64,10 +67,21 @@ dnsServer.on("message", (msg, rinfo) => {
   const ipAddress = db_of_IP[domain]; // Lookup the domain in the database
 
   // Handle cases where the domain is not found in the database
+  // Handle cases where the domain is not found in the database
   if (!ipAddress) {
-    console.log(`No IP found for domain: ${domain}`);
-    return;
+    const errorResponse = dnspacket.encode({
+      type: "response",
+      id: request.id,
+      flags: dnspacket.RECURSION_AVAILABLE,
+      questions: request.questions,
+      answers: [],
+      additionals: [],
+    });
+
+    dnsServer.send(errorResponse, rinfo.port, rinfo.address);
+    return; // No further processing
   }
+
 
   // Create a response dynamically based on the query
   const response = dnspacket.encode({
@@ -95,10 +109,10 @@ dnsServer.bind(DNS_SERVER_PORT, () =>
 // HTTP API to handle DNS queries via HTTP
 httpServer.get("/dns-query", (req, res) => {
   //server maintenance
-  if(maintenance){
+  if (maintenance) {
     return res
-    .status(400)
-    .json({ error: "Server is on maintenance" });
+      .status(400)
+      .json({ error: "Server is on maintenance" });
   }
   const domain = req.query.domain;
   if (!domain)
@@ -136,11 +150,15 @@ httpServer.get("/dns-query", (req, res) => {
     }
   });
 
-
   client.on("message", (msg) => {
     const response = dnspacket.decode(msg);
     // console.log("res", response);
     const answer = response.answers[0];
+
+    if (!answer) {
+      return res.status(404).json({ error: `No IP found for domain: ${domain}` });
+    }
+
 
     if (answer) {
       // Prepare JSON data
@@ -178,12 +196,12 @@ httpServer.get("/dns-query", (req, res) => {
             <h1>DNS Query Result</h1>
             <p>The following data was retrieved:</p>
             <pre>${JSON.stringify(jsonData, null, 2)}</pre>
-            <p>Redirecting to <strong>${answer.data}</strong> in ${REDIRECT_DELAY/1000} seconds...</p>
+            <p>Redirecting to <strong>${answer.data}</strong> in ${REDIRECT_DELAY / 1000} seconds...</p>
           </body>
         </html>
       `);
     }
-     else {
+    else {
       res.json({ error: "No DNS response found." });
     }
 
