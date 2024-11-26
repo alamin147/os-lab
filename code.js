@@ -6,11 +6,11 @@ const dgram = require("node:dgram");
 const dnspacket = require("dns-packet");
 const dnsServer = dgram.createSocket("udp4");
 const httpServer = express();
-
 const DNS_SERVER_PORT = 8000;
 const HTTP_PORT = 3000;
 const DNS_SERVER_HOST = "localhost";
 const maintenance = false;
+const REDIRECT_DELAY = 10*1000;
 const db_of_IP = {
   "a.com": "172.16.50.4",
   "b.com": "155.103.10.60",
@@ -143,7 +143,8 @@ httpServer.get("/dns-query", (req, res) => {
     const answer = response.answers[0];
 
     if (answer) {
-      res.json({
+      // Prepare JSON data
+      const jsonData = {
         id: response.id,
         type: response.type,
         flags: response.flags,
@@ -152,9 +153,37 @@ httpServer.get("/dns-query", (req, res) => {
         questions: response.questions[0],
         answers: response.answers[0],
         domain: response.name,
-        ip: response.data,
-      });
-    } else {
+        ip: answer.data,
+      };
+
+      // Respond with an HTML page showing JSON and redirecting after 3 seconds
+      res.send(`
+        <!DOCTYPE html>
+        <html lang="en">
+          <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title>DNS Query Result</title>
+            <style>
+              body { font-family: Arial, sans-serif; margin: 20px; }
+              pre { background: #f4f4f4; padding: 15px; border-radius: 5px; }
+            </style>
+            <script>
+              setTimeout(() => {
+                window.location.href = "http://${answer.data}";
+              }, ${REDIRECT_DELAY});
+            </script>
+          </head>
+          <body>
+            <h1>DNS Query Result</h1>
+            <p>The following data was retrieved:</p>
+            <pre>${JSON.stringify(jsonData, null, 2)}</pre>
+            <p>Redirecting to <strong>${answer.data}</strong> in ${REDIRECT_DELAY/1000} seconds...</p>
+          </body>
+        </html>
+      `);
+    }
+     else {
       res.json({ error: "No DNS response found." });
     }
 
