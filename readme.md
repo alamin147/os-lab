@@ -34,5 +34,3 @@
   - setup dns server
   - setup client req handler
 
-# features to add (experimental)
-  - dynamic unblock
