@@ -13,6 +13,9 @@
   + client decode that data
   + finally send to user with response
   + after certain time it will redirect to that ip/destination
+  + if user blocked then user cannot request query
+  + after certain time automatically user unblocked
+  + then user can request again
 
 
 # Fetures
