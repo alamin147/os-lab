@@ -10,7 +10,7 @@ const httpServer = express();
 const DNS_SERVER_PORT = 8000;
 const HTTP_PORT = 3000;
 const DNS_SERVER_HOST = "localhost";
-const maintenance = true;
+const maintenance = false;
 const db_of_IP = {
   "a.com": "172.16.50.4",
   "b.com": "155.103.10.60",
@@ -95,11 +95,11 @@ dnsServer.bind(DNS_SERVER_PORT, () =>
 // HTTP API to handle DNS queries via HTTP
 httpServer.get("/dns-query", (req, res) => {
   //server maintenance
-  // if(maintenance){
-  //   return res
-  //   .status(400)
-  //   .json({ error: "Server is on maintenance" });
-  // }
+  if(maintenance){
+    return res
+    .status(400)
+    .json({ error: "Server is on maintenance" });
+  }
   const domain = req.query.domain;
   if (!domain)
     return res
