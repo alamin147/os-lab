@@ -1,6 +1,3 @@
-// prerequisite: npm, node installed
-// install this package
-// npm i dns-packet
 const express = require("express");
 const dgram = require("node:dgram");
 const dnspacket = require("dns-packet");
@@ -9,21 +6,33 @@ const httpServer = express();
 const DNS_SERVER_PORT = 8000;
 const HTTP_PORT = 3000;
 const DNS_SERVER_HOST = "localhost";
+
 const maintenance = false;
-const REDIRECT_DELAY = 1000 * 1000;
+const REDIRECT_DELAY = 5 * 1000;
+const UNBLOCK_DELAY = 10 * 1000; // 10 seconds in milliseconds
+const blockedIps = [];
+const userRequestLog = {};
+const MAX_REQUESTS_PER_MINUTE = 5;
+const TIME_WINDOW = 60 * 1000; // 1 minute in milliseconds
 
 // Database of IP addresses for domains
 const db_of_IP = {
   "a.com": "172.16.50.4",
   "b.com": "155.103.10.60",
-  "diu.com": "456.12.4.6",
+  "diu.com": "255.12.4.6",
 };
 
-
-const blockedIps = [];
-const userRequestLog = {};
-const MAX_REQUESTS_PER_MINUTE = 5;
-const TIME_WINDOW = 60 * 1000; // 1 minute in milliseconds
+// Function to unblock an IP after a delay
+function unblockIp(ip) {
+  setTimeout(() => {
+    const index = blockedIps.indexOf(ip);
+    if (index !== -1) {
+      blockedIps.splice(index, 1); // Remove IP from the blocked list
+      delete userRequestLog[ip]; // Clear request log for the IP
+      // console.log(`Unblocked IP: ${ip}`);
+    }
+  }, UNBLOCK_DELAY);
+}
 
 // Function to apply rate limiting and blocking logic
 function checkRateLimit(ip) {
@@ -35,25 +44,23 @@ function checkRateLimit(ip) {
       message: "Your IP is blocked due to excessive requests.",
     };
   }
-
   if (!userRequestLog[ip]) userRequestLog[ip] = [];
-
   userRequestLog[ip] = userRequestLog[ip].filter(
     (requestTime) => currentTime - requestTime <= TIME_WINDOW
   );
-
   userRequestLog[ip].push(currentTime);
-
   if (userRequestLog[ip].length > MAX_REQUESTS_PER_MINUTE) {
     blockedIps.push(ip);
+    unblockIp(ip); // Schedule unblocking after a delay
     return {
       blocked: true,
       message: "Your IP is now blocked due to excessive requests.",
     };
   }
-
   return { blocked: false };
 }
+
+
 
 // DNS server logic
 dnsServer.on("message", (msg, rinfo) => {
@@ -77,11 +84,9 @@ dnsServer.on("message", (msg, rinfo) => {
       answers: [],
       additionals: [],
     });
-
     dnsServer.send(errorResponse, rinfo.port, rinfo.address);
     return; // No further processing
   }
-
 
   // Create a response dynamically based on the query
   const response = dnspacket.encode({
@@ -158,10 +163,8 @@ httpServer.get("/dns-query", (req, res) => {
     if (!answer) {
       return res.status(404).json({ error: `No IP found for domain: ${domain}` });
     }
-
-
     if (answer) {
-      // Prepare JSON data
+      //  JSON data
       const jsonData = {
         id: response.id,
         type: response.type,
@@ -174,7 +177,7 @@ httpServer.get("/dns-query", (req, res) => {
         ip: answer.data,
       };
 
-      // Respond with an HTML page showing JSON and redirecting after 3 seconds
+      // Respond with an HTML page showing JSON and redirecting after seconds
       res.send(`
         <!DOCTYPE html>
         <html lang="en">
@@ -212,3 +215,4 @@ httpServer.get("/dns-query", (req, res) => {
 httpServer.listen(HTTP_PORT, () => {
   console.log(`HTTP server running on port ${HTTP_PORT}`);
 });
+
