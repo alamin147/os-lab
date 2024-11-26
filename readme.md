@@ -37,3 +37,9 @@
   - setup dns server
   - setup client req handler
 
+# Run steps
+  - git clone
+  - run (npm i)
+  - to start (npm start)
+  
+  query url: http://localhost:3000/dns-query?domain=a.com
