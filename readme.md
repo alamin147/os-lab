@@ -12,6 +12,7 @@
   + if found ip it encodes data and send response to client
   + client decode that data
   + finally send to user with response
+  + after certain time it will redirect to that ip/destination
 
 
 # Fetures
@@ -20,6 +21,7 @@
   - block user on excessive requests
   - can handle both ipv4 and ipv6
   - no ip response if ip not registered
+  - redirect to requested destination
 
 # Packages
   - node
@@ -33,4 +35,3 @@
 
 # features to add (experimental)
   - dynamic unblock
-  - redirect after 3 second to ip
