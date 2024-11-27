@@ -7,8 +7,9 @@ const DNS_SERVER_PORT = 8000;
 const HTTP_PORT = 3000;
 const DNS_SERVER_HOST = "localhost";
 
+
 const maintenance = false;
-const REDIRECT_DELAY = 5 * 1000;
+const REDIRECT_DELAY = 7 * 1000;
 const UNBLOCK_DELAY = 10 * 1000; // 10 seconds in milliseconds
 const blockedIps = [];
 const userRequestLog = {};
@@ -19,7 +20,9 @@ const TIME_WINDOW = 60 * 1000; // 1 minute in milliseconds
 const db_of_IP = {
   "a.com": "172.16.50.4",
   "b.com": "155.103.10.60",
-  "diu.com": "255.12.4.6",
+  "c.com": "155.103.10.60",
+  "blc.com": "65.0.166.172",
+  "google.com":"142.250.195.238",
 };
 
 // Function to unblock an IP after a delay
@@ -48,6 +51,7 @@ function checkRateLimit(ip) {
   userRequestLog[ip] = userRequestLog[ip].filter(
     (requestTime) => currentTime - requestTime <= TIME_WINDOW
   );
+ 
   userRequestLog[ip].push(currentTime);
   if (userRequestLog[ip].length > MAX_REQUESTS_PER_MINUTE) {
     blockedIps.push(ip);
@@ -119,6 +123,7 @@ httpServer.get("/dns-query", (req, res) => {
       .status(400)
       .json({ error: "Server is on maintenance" });
   }
+
   const domain = req.query.domain;
   if (!domain)
     return res
@@ -215,4 +220,3 @@ httpServer.get("/dns-query", (req, res) => {
 httpServer.listen(HTTP_PORT, () => {
   console.log(`HTTP server running on port ${HTTP_PORT}`);
 });
-
